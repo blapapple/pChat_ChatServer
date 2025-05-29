@@ -1,5 +1,6 @@
 #pragma once
 #include "const.h"
+#include "data.h"
 #include <thread>
 #include <jdbc/mysql_driver.h>
 #include <jdbc/mysql_connection.h>
@@ -39,13 +40,6 @@ private:
 	std::thread check_thread_;
 };
 
-struct UserInfo
-{
-	std::string name;
-	std::string email;
-	std::string pwd;
-	int uid;
-};
 
 class MysqlDao
 {

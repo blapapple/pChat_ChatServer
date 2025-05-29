@@ -3,6 +3,7 @@
 #include "MysqlMgr.h"
 #include "StatusGrpcClient.h"
 
+
 LogicSystem::~LogicSystem()
 {
 	_b_stop = true;

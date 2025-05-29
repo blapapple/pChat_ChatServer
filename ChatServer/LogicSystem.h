@@ -3,6 +3,7 @@
 #include "MysqlMgr.h"
 #include "CSession.h"
 #include "CServer.h"
+#include "data.h"
 
 class CSession;
 class LogicNode;

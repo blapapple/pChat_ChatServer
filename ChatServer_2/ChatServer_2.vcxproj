@@ -20,7 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AsioIOServicePool.cpp" />
+    <ClCompile Include="ChatGrpcClient.cpp" />
     <ClCompile Include="ChatServer.cpp" />
+    <ClCompile Include="ChatServiceImpl.cpp" />
     <ClCompile Include="ConfigMgr.cpp" />
     <ClCompile Include="CServer.cpp" />
     <ClCompile Include="CSession.cpp" />
@@ -32,9 +34,12 @@
     <ClCompile Include="MysqlMgr.cpp" />
     <ClCompile Include="RedisMgr.cpp" />
     <ClCompile Include="StatusGrpcClient.cpp" />
+    <ClCompile Include="UserMgr.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AsioIOServicePool.h" />
+    <ClInclude Include="ChatGrpcClient.h" />
+    <ClInclude Include="ChatServiceImpl.h" />
     <ClInclude Include="ConfigMgr.h" />
     <ClInclude Include="const.h" />
     <ClInclude Include="CServer.h" />
@@ -49,10 +54,14 @@
     <ClInclude Include="RedisMgr.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="StatusGrpcClient.h" />
+    <ClInclude Include="UserMgr.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ChatServer_2.vcxproj.user" />
     <None Include="config.ini" />
     <None Include="message.proto" />
+    <None Include="mysqlcppconn-9-vs14.dll" />
+    <None Include="mysqlcppconn8-2-vs14.dll" />
     <None Include="PropertySheet.props" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

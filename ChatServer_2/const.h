@@ -2,6 +2,7 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast.hpp>
 #include <boost/asio.hpp>
+#include <boost/system/system_error.hpp>
 #include <memory>
 #include <iostream>
 #include <json/json.h>
@@ -50,8 +51,18 @@ enum ErrorCodes {
 	TokenInvalid = 1011,			//Token无效
 };
 
+enum MSG_IDS {
+	MSG_CHAT_LOGIN = 1005,		// 用户登录
+	MSG_CHAT_LOGIN_RSP = 1006,	// 用户登录返回包
+};
+
 #define CODEPREFIX "code_"
-#define USERTOKENPREFIX  "utoken_"
+#define MAX_LENGTH 1024*2
+#define HEAD_TOTAL_LEN 4		// 头部总长度
+#define HEAD_ID_LEN 2			// 头部id长度
+#define HEAD_DATA_LEN 2			// 头部数据长度
+#define MAX_RECVQUE 10000		// 最大接收队列长度
+#define MAX_SENDQUE 10000		// 最大发送队列长度
 
 /**
 * Defer类，用于在作用域结束前调用指定的函数

@@ -3,7 +3,7 @@
 #include "const.h"
 
 std::string generate_unique_string() {
-	// 创建UUID对象
+	// 创建UUID对象，雪花算法
 	boost::uuids::uuid uuid = boost::uuids::random_generator()();
 
 	// 将UUID转换为字符串
@@ -60,6 +60,7 @@ Status StatusServiceImpl::Login(ServerContext* context, const message::LoginReq*
 void StatusServiceImpl::insertToken(int uid, std::string token)
 {
 	std::lock_guard<std::mutex> guard(_token_mtx);
+	//将token存到程序内存而不是redis中
 	_tokens[uid] = token;
 }
 
@@ -67,15 +68,15 @@ StatusServiceImpl::StatusServiceImpl()
 {
 	auto& cfg = ConfigMgr::Inst();
 	ChatServer server;
-	server.port = cfg["ChatServer1"]["Port"];
-	server.host = cfg["ChatServer1"]["Host"];
+	server.port = cfg["ChatServer_1"]["Port"];
+	server.host = cfg["ChatServer_1"]["Host"];
 	server.con_count = 0;
-	server.name = cfg["ChatServer1"]["Name"];
+	server.name = cfg["ChatServer_1"]["Name"];
 	_servers[server.name] = server;
 
-	server.port = cfg["ChatServer2"]["Port"];
-	server.host = cfg["ChatServer2"]["Host"];
+	server.port = cfg["ChatServer_2"]["Port"];
+	server.host = cfg["ChatServer_2"]["Host"];
 	server.con_count = 0;
-	server.name = cfg["ChatServer2"]["Name"];
+	server.name = cfg["ChatServer_2"]["Name"];
 	_servers[server.name] = server;
 }

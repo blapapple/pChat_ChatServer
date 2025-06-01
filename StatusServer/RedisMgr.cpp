@@ -6,7 +6,7 @@ RedisMgr::RedisMgr() {
 	std::string host = gConfigMgr["Redis"]["Host"];
 	std::string port = gConfigMgr["Redis"]["Port"];
 	std::string password = gConfigMgr["Redis"]["Passwd"];
-	_con_pool.reset(new RedisConPool(5, host.c_str(), atoi(port.c_str()), password.c_str()));
+	_con_pool.reset(new RedisConPool(20, host.c_str(), atoi(port.c_str()), password.c_str()));
 
 }
 

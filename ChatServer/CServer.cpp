@@ -1,6 +1,7 @@
 #include "CServer.h"
 //#include "HttpConnection.h"
 #include "AsioIOServicePool.h"
+#include "UserMgr.h"
 
 CServer::CServer(boost::asio::io_context& ioc, unsigned short& port) :_io_context(ioc),
 _acceptor(ioc, tcp::endpoint(tcp::v4(), port)) {
@@ -31,7 +32,14 @@ void CServer::StartAccept() {
 	_acceptor.async_accept(new_session->GetSocket(), std::bind(&CServer::HandleAccept, this, new_session, std::placeholders::_1));
 }
 
-void CServer::ClearSession(std::string uuid) {
-	std::lock_guard<std::mutex> lock(_mutex);
-	_sessions.erase(uuid);
+void CServer::ClearSession(std::string session_id) {
+	if (_sessions.find(session_id) != _sessions.end())
+	{
+		//移除用户和session的关系，清除本内存用户的连接信息
+		UserMgr::GetInstance()->RmvUserSession(_sessions[session_id]->GetUserId());
+	}
+	{
+		std::lock_guard<std::mutex> lock(_mutex);
+		_sessions.erase(session_id);
+	}
 }

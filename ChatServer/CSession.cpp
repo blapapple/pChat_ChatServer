@@ -3,6 +3,7 @@
 CSession::CSession(boost::asio::io_context& io_context, CServer* server) :
 	_socket(io_context), _server(server), _b_close(false), _b_head_parse(false), _user_uid(0) {
 	boost::uuids::uuid  a_uuid = boost::uuids::random_generator()();
+	_session_id = boost::uuids::to_string(a_uuid);
 	_recv_head_node = make_shared<MsgNode>(HEAD_TOTAL_LEN);
 }
 
@@ -27,14 +28,14 @@ void CSession::AsyncReadBody(int total_len)
 			if (ec) {
 				std::cout << "handle read failed, error is " << ec.what() << std::endl;
 				self->Close();
-				self->_server->ClearSession(self->_uuid);
+				self->_server->ClearSession(self->_session_id);
 				return;
 			}
 
 			if (bytes_transfered < total_len) {
 				std::cout << "read length not match, read [" << bytes_transfered << "], total [" << total_len << "]" << std::endl;
 				self->Close();
-				self->_server->ClearSession(self->_uuid);
+				self->_server->ClearSession(self->_session_id);
 				return;
 			}
 
@@ -167,7 +168,7 @@ void CSession::AsyncReadHead(int total_len)
 			if (ec) {
 				std::cout << "handle read failed, error is " << ec.what() << std::endl;
 				self->Close();
-				self->_server->ClearSession(self->_uuid);
+				self->_server->ClearSession(self->_session_id);
 				return;
 			}
 
@@ -176,7 +177,7 @@ void CSession::AsyncReadHead(int total_len)
 				std::cout << "read length not match, read [" << bytes_transfered << "], total ["
 					<< HEAD_TOTAL_LEN << "]" << std::endl;
 				self->Close();
-				self->_server->ClearSession(self->_uuid);
+				self->_server->ClearSession(self->_session_id);
 				return;
 			}
 
@@ -191,7 +192,7 @@ void CSession::AsyncReadHead(int total_len)
 
 			if (msg_id > MAX_LENGTH) { //id·Ç·¨
 				std::cout << "invalid msg_id is" << msg_id << std::endl;
-				self->_server->ClearSession(self->_uuid);
+				self->_server->ClearSession(self->_session_id);
 				return;
 			}
 			short msg_len = 0;
@@ -202,7 +203,7 @@ void CSession::AsyncReadHead(int total_len)
 
 			if (msg_len > MAX_LENGTH) {
 				std::cout << "invalid data length is " << msg_len << std::endl;
-				self->_server->ClearSession(self->_uuid);
+				self->_server->ClearSession(self->_session_id);
 				return;
 			}
 

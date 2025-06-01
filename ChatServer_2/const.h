@@ -57,6 +57,13 @@ enum MSG_IDS {
 };
 
 #define CODEPREFIX "code_"
+#define USERTOKENPREFIX  "utoken_"
+#define USERIPREFIX "uip_"
+#define IPCOUNTPREFIX "ipcount_"
+#define LOGIN_COUNT "logincount"
+#define USER_BASE_INFO "ubaseinfo_"
+#define NAME_INFO "nameinfo_"
+
 #define MAX_LENGTH 1024*2
 #define HEAD_TOTAL_LEN 4		// 头部总长度
 #define HEAD_ID_LEN 2			// 头部id长度

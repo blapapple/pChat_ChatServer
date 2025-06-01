@@ -57,12 +57,8 @@
     <ClInclude Include="UserMgr.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ChatServer_2.vcxproj.user" />
     <None Include="config.ini" />
     <None Include="message.proto" />
-    <None Include="mysqlcppconn-9-vs14.dll" />
-    <None Include="mysqlcppconn8-2-vs14.dll" />
-    <None Include="PropertySheet.props" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

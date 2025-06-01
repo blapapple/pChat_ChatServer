@@ -52,6 +52,10 @@ enum ErrorCodes {
 
 #define CODEPREFIX "code_"
 #define USERTOKENPREFIX  "utoken_"
+#define LOGIN_COUNT "logincount"
+#define USER_BASE_INFO "ubaseinfo_"
+#define USERIPPREFIX "uip_"
+#define IPCOUNTPREFIX "ipcount_"
 
 /**
 * Defer类，用于在作用域结束前调用指定的函数

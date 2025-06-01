@@ -6,7 +6,7 @@ RedisMgr::RedisMgr() {
 	std::string host = gConfigMgr["Redis"]["Host"];
 	std::string port = gConfigMgr["Redis"]["Port"];
 	std::string password = gConfigMgr["Redis"]["Passwd"];
-	_con_pool.reset(new RedisConPool(5, host.c_str(), atoi(port.c_str()), password.c_str()));
+	_con_pool.reset(new RedisConPool(10, host.c_str(), atoi(port.c_str()), password.c_str()));
 
 }
 
@@ -178,6 +178,32 @@ bool RedisMgr::HSet(const std::string& key, const std::string& hkey, const std::
 	std::cout << "Execut command [ HSet " << key << "  " << hkey << "  " << value << " ] success ! " << std::endl;
 	freeReplyObject(reply);
 	return true;
+}
+
+bool RedisMgr::HDel(const std::string& key, const std::string& field)
+{
+	auto connect = _con_pool->getConnection();
+	if (connect == nullptr)
+	{
+		return false;
+	}
+
+	Defer defer([&connect, this]() {
+		_con_pool->returnConnection(connect);
+		});
+
+	redisReply* reply = (redisReply*)redisCommand(connect, "HDEL %s %s", key.c_str(), field.c_str());
+	if (reply == nullptr) {
+		std::cout << "Execut command [ HDel " << key << "  " << field << " ] failure ! " << std::endl;
+		return false;
+	}
+	bool success = false;
+	if (reply->type == REDIS_REPLY_INTEGER) {
+		success = reply->integer > 0; //返回值大于0表示删除成功
+	}
+
+	freeReplyObject(reply);
+	return success;
 }
 
 

@@ -41,7 +41,7 @@ private:
 	std::mutex _session_mtx; 	//»á»°Ëø
 	std::mutex _send_lock;	//·¢ËÍËø
 	tcp::socket _socket;
-	std::string _uuid;
+	//std::string _uuid;
 	CServer* _server;
 	std::atomic<bool> _b_close;
 	std::atomic<bool> _b_head_parse;

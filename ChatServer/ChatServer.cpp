@@ -15,6 +15,8 @@ std::mutex mutex_quit;
 
 int main()
 {
+	//todo: 将std::cout和std::cerr替换为日志库
+
 	auto& cfg = ConfigMgr::Inst();
 	auto server_name = cfg["SelfServer"]["Name"];
 	try {

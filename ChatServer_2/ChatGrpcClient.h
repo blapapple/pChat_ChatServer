@@ -62,6 +62,6 @@ public:
 	TextChatMsgRsp NotifyTextChatMsg(std::string server_ip, const TextChatMsgReq& req, const Json::Value& rtvalue);
 private:
 	ChatGrpcClient();
-	std::unordered_map<std::string, std::unique_ptr<ChatConPool>> _pools;
+	std::unordered_map<std::string, std::unique_ptr<ChatConPool>> _pools;	//一个ip对应一个连接池，从连接池中获取连接与服务器连接
 };
 

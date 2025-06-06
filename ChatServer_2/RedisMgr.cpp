@@ -20,13 +20,15 @@ bool RedisMgr::Get(const std::string& key, std::string& value) {
 	auto reply = (redisReply*)redisCommand(connect, "GET %s", key.c_str());
 	if (reply == nullptr) {
 		std::cout << "[ GET " << key << " ] failed" << std::endl;
-		freeReplyObject(reply);
+		//freeReplyObject(reply);
+		_con_pool->returnConnection(connect);
 		return false;
 	}
 
 	if (reply->type != REDIS_REPLY_STRING) {
 		std::cout << "[ GET " << key << " ] failed, type error" << std::endl;
 		freeReplyObject(reply);
+		_con_pool->returnConnection(connect);
 		return false;
 	}
 
@@ -47,6 +49,7 @@ bool RedisMgr::Set(const std::string& key, const std::string& value) {
 	auto reply = (redisReply*)redisCommand(connect, "SET %s %s", key.c_str(), value.c_str());
 	if (reply == nullptr) {
 		std::cout << "[ SET " << key << " ] failed" << std::endl;
+		_con_pool->returnConnection(connect);
 		freeReplyObject(reply);
 		return false;
 	}

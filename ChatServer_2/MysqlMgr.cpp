@@ -24,6 +24,11 @@ bool MysqlMgr::UpdatePwd(const std::string& name, const std::string& pwd)
 	return _dao.UpdatePwd(name, pwd);
 }
 
+bool MysqlMgr::AddFriendApply(const int& from, const int& to)
+{
+	return _dao.AddFriendApply(from, to);
+}
+
 std::shared_ptr<UserInfo> MysqlMgr::GetUser(int uid)
 {
 	return _dao.GetUser(uid);

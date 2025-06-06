@@ -7,7 +7,7 @@
 class CServer;
 class LogicSystem;
 
-class CSession : public std::enable_shared_from_this<CSession>
+class CSession : public std::enable_shared_from_this<CSession>//管理单个客户端的 TCP 连接，处理数据的异步读写、消息解析和发送逻辑
 {
 public:
 	CSession(net::io_context& io_context, CServer* server);

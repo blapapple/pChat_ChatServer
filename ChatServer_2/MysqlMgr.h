@@ -12,6 +12,7 @@ public:
 	bool CheckPwd(const std::string& email, const std::string& pwd, UserInfo& userInfo);
 	bool UpdatePwd(const std::string& name, const std::string& pwd);
 	bool AddFriendApply(const int& from, const int& to);
+	bool GetApplyList(int touid, std::vector<std::shared_ptr<ApplyInfo>>& applyList, int begin, int limit);
 	std::shared_ptr<UserInfo> GetUser(int uid);
 	std::shared_ptr<UserInfo> GetUser(std::string name);
 private:

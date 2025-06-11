@@ -5,6 +5,7 @@
 #include "const.h"
 #include "UserMgr.h"
 #include "ChatGrpcClient.h"
+#include "UserInfoMgr.h"
 
 LogicSystem::~LogicSystem()
 {
@@ -85,6 +86,9 @@ void LogicSystem::RegisterCallBacks()
 
 	_fun_callbacks[ID_ADD_FRIEND_REQ] = std::bind(&LogicSystem::AddFriendApply, this,
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+
+	_fun_callbacks[ID_AUTH_FRIEND_REQ] = std::bind(&LogicSystem::AuthFriendApply, this,
+		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 }
 
 void LogicSystem::LoginHandler(std::shared_ptr<CSession> session, const short& msg_id, const std::string& msg_data)
@@ -120,7 +124,7 @@ void LogicSystem::LoginHandler(std::shared_ptr<CSession> session, const short& m
 
 	std::string base_key = USER_BASE_INFO + uid_str;
 	auto user_info = std::make_shared<UserInfo>();
-	bool b_base = GetBaseInfo(base_key, uid, user_info);
+	bool b_base = UserInfoMgr::GetInstance()->GetBaseInfo(base_key, uid, user_info);
 	if (!b_base) {
 		rtvalue["error"] = ErrorCodes::UidInvalid; //用户不存在
 		return;
@@ -255,7 +259,7 @@ void LogicSystem::AddFriendApply(std::shared_ptr<CSession> session, const short&
 	//先查询申请者的信息，后续将信息传给另一个服务器，以便对方可以显示申请者的信息
 	std::string base_key = USER_BASE_INFO + std::to_string(uid);
 	auto apply_info = std::make_shared<UserInfo>();
-	bool b_info = GetBaseInfo(base_key, uid, apply_info);
+	bool b_info = UserInfoMgr::GetInstance()->GetBaseInfo(base_key, uid, apply_info);
 
 	AddFriendReq add_req;
 	add_req.set_applyuid(uid);
@@ -269,6 +273,92 @@ void LogicSystem::AddFriendApply(std::shared_ptr<CSession> session, const short&
 	}
 
 	ChatGrpcClient::GetInstance()->NotifyAddFriend(to_ip_value, add_req);
+}
+
+void LogicSystem::AuthFriendApply(std::shared_ptr<CSession> session, const short& msg_id, const std::string& msg_data)
+{
+	Json::Reader reader;
+	Json::Value root;
+	reader.parse(msg_data, root);
+
+	//fromuid是认证者的uid,touid是申请者的uid
+	auto uid = root["fromuid"].asInt();
+	auto touid = root["touid"].asInt();
+	auto bakname = root["back"].asString();
+
+	std::cout << "from " << uid << " auth friend apply from " << touid
+		<< " with bakname " << bakname << std::endl;
+
+	Json::Value rtvalue;
+	rtvalue["error"] = ErrorCodes::Success;
+	auto user_info = std::make_shared<UserInfo>();
+
+	std::string base_key = USER_BASE_INFO + std::to_string(touid);
+	bool b_info = UserInfoMgr::GetInstance()->GetBaseInfo(base_key, uid, user_info);
+	if (b_info) {
+		rtvalue["name"] = user_info->name;
+		rtvalue["icon"] = user_info->icon;
+		rtvalue["nick"] = user_info->nick;
+		rtvalue["desc"] = user_info->desc;
+		rtvalue["sex"] = user_info->sex;
+		rtvalue["uid"] = user_info->uid;
+	}
+	else {
+		rtvalue["error"] = ErrorCodes::UidInvalid;
+	}
+
+	Defer defer([this, &rtvalue, session]() {
+		std::string return_str = rtvalue.toStyledString();
+		session->Send(return_str, ID_AUTH_FRIEND_RSP);
+		});
+
+	//更新数据库并添加好友
+	MysqlMgr::GetInstance()->AuthFriendApply(uid, touid);
+	MysqlMgr::GetInstance()->AddFriend(uid, touid, bakname);
+
+	//查询redis，查找touid对应的serverip
+	auto to_str = std::to_string(touid);
+	auto to_ip_key = USERIPREFIX + to_str;
+	std::string to_ip_value = "";
+	bool b_ip = RedisMgr::GetInstance()->Get(to_ip_key, to_ip_value);
+	if (!b_ip) {
+		return;
+	}
+	auto& cfg = ConfigMgr::Inst();
+	auto self_name = cfg["SelfServer"]["Name"];
+	//	直接通知对方有认证通过信息
+	if (to_ip_value == self_name) {
+		auto session = UserMgr::GetInstance()->GetSession(touid);
+		if (session != nullptr) {
+			//在内存中则直接发送给对方
+			Json::Value notify;
+			notify["error"] = ErrorCodes::Success;
+			notify["fromuid"] = uid;
+			notify["touid"] = touid;
+			std::string base_key = USER_BASE_INFO + std::to_string(uid);
+			auto user_info = std::make_shared<UserInfo>();
+			bool b_info = UserInfoMgr::GetInstance()->GetBaseInfo(base_key, uid, user_info);
+			if (b_info) {
+				notify["name"] = user_info->name;
+				notify["nick"] = user_info->nick;
+				notify["icon"] = user_info->icon;
+				notify["sex"] = user_info->sex;
+			}
+			else {
+				notify["error"] = ErrorCodes::UidInvalid;
+			}
+
+			std::string return_str = notify.toStyledString();
+			session->Send(return_str, ID_NOTIFY_AUTH_FRIEND_REQ);
+		}
+		return;
+	}
+
+	AuthFriendReq auth_req;
+	auth_req.set_fromuid(uid);
+	auth_req.set_touid(touid);
+	//通过rpc发送通知
+	ChatGrpcClient::GetInstance()->NotifyAuthFriend(to_ip_value, auth_req);
 }
 
 bool LogicSystem::isPureGiget(const std::string& str)
@@ -414,45 +504,4 @@ bool LogicSystem::GetFriendApplyInfo(int to_uid, std::vector<std::shared_ptr<App
 	return MysqlMgr::GetInstance()->GetApplyList(to_uid, list, 0, 10);
 }
 
-bool LogicSystem::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<UserInfo>& userinfo)
-{
-	//优先查询Redis
-	std::string info_str = "";
-	bool b_base = RedisMgr::GetInstance()->Get(base_key, info_str);
-	if (b_base) {
-		Json::Reader reader;
-		Json::Value root;
-		reader.parse(info_str, root);
-		userinfo->uid = root["uid"].asInt();
-		userinfo->name = root["name"].asString();
-		userinfo->pwd = root["pwd"].asString();
-		userinfo->email = root["email"].asString();
-		userinfo->nick = root["nick"].asString();
-		userinfo->desc = root["desc"].asString();
-		userinfo->sex = root["sex"].asInt();
-		userinfo->icon = root["icon"].asString();
-		std::cout << "user login uid is " << userinfo->uid << " ; user name is " << userinfo->name
-			<< " ; user email is " << userinfo->email << std::endl;
-	}
-	else {
-		std::shared_ptr<UserInfo> user_info = nullptr;
-		user_info = MysqlMgr::GetInstance()->GetUser(uid);
-		if (user_info == nullptr) {
-			return false; //用户不存在
-		}
-		userinfo = user_info;
-
-		//将数据库内容写入redis缓存
-		Json::Value redis_root;
-		redis_root["uid"] = user_info->uid;
-		redis_root["name"] = user_info->name;
-		redis_root["pwd"] = user_info->pwd;
-		redis_root["email"] = user_info->email;
-		redis_root["nick"] = user_info->nick;
-		redis_root["desc"] = user_info->desc;
-		redis_root["sex"] = user_info->sex;
-		redis_root["icon"] = user_info->icon;
-		RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString());
-	}
-}
 

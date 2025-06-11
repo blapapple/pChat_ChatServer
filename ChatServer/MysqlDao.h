@@ -52,6 +52,8 @@ public:
 	bool UpdatePwd(const std::string& name, const std::string& newpwd);
 	bool AddFriendApply(const int& from, const int& to);
 	bool GetApplyList(int touid, std::vector<std::shared_ptr<ApplyInfo>>& applyList, int begin, int limit);
+	bool AuthFriendApply(const int& from, const int& to);	//这里之后可以和AddFriend合并成一个存储过程	
+	bool AddFriend(const int& from, const int& to, std::string back_name);
 	std::shared_ptr<UserInfo> GetUser(int uid);
 	std::shared_ptr<UserInfo> GetUser(std::string name);
 private:

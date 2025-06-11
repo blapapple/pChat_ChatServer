@@ -135,7 +135,7 @@ int MysqlDao::RegUser(const std::string& name, const std::string& email, const s
 
 		// 由于PreparedStatement不直接支持注册输出参数，我们需要使用会话变量或其他方法来获取输出参数的值
 
-		  // 执行存储过程
+		// 执行存储过程
 		stmt->execute();
 		// 如果存储过程设置了会话变量或有其他方式获取输出参数的值，可以在这里执行SELECT查询来获取它们
 		std::unique_ptr<sql::Statement> stmtResult(con->_con->createStatement());
@@ -397,6 +397,93 @@ bool MysqlDao::GetApplyList(int touid, std::vector<std::shared_ptr<ApplyInfo>>& 
 			applyList.emplace_back(apply_ptr);
 		}
 		return true;
+	}
+	catch (sql::SQLException& e) {
+		std::cerr << "SQLException: " << e.what();
+		std::cerr << " (MySQL error code: " << e.getErrorCode();
+		std::cerr << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+		return false;
+	}
+}
+
+bool MysqlDao::AuthFriendApply(const int& from, const int& to)
+{
+	auto con = pool_->GetConnection();
+	if (con == nullptr) {
+		return false;
+	}
+
+	Defer defer([&con, this]() {
+		pool_->ReturnConnection(std::move(con));
+		});
+
+	try {
+		std::unique_ptr<sql::PreparedStatement> pstmt(con->_con->prepareStatement("UPDATE friend_apply SET status = 1 WHERE from_uid = ? AND to_uid = ?"));
+
+		// 这里是认证，认证的from是申请的to，这里是反过来的
+		pstmt->setInt(1, to);
+		pstmt->setInt(2, from);
+		// 执行更新
+		int rowAffected = pstmt->executeUpdate();
+		if (rowAffected <= 0) {
+			return false;
+		}
+
+		return true;
+	}
+	catch (sql::SQLException& e) {
+		std::cerr << "SQLException: " << e.what();
+		std::cerr << " (MySQL error code: " << e.getErrorCode();
+		std::cerr << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+		return false;
+	}
+}
+
+bool MysqlDao::AddFriend(const int& from, const int& to, std::string back_name)
+{
+	auto con = pool_->GetConnection();
+	if (con == nullptr) {
+		return false;
+	}
+
+	Defer defer([&con, this]() {
+		pool_->ReturnConnection(std::move(con));
+		});
+
+	try {
+		//开始事务
+		con->_con->setAutoCommit(false);
+
+		//	准备第一个sql语句，插入认证方好友数据
+		std::unique_ptr<sql::PreparedStatement> pstmt1(con->_con->prepareStatement("INSERT IGNORE INTO friend(self_id, friend_id, back) VALUES(?,?,?)"));
+		//	认证的from是申请的to，这里是反过来的
+		pstmt1->setInt(1, from);
+		pstmt1->setInt(2, to);
+		pstmt1->setString(3, back_name);
+		//	执行更新
+		int rowAffected = pstmt1->executeUpdate();
+		if (rowAffected < 0) {
+			con->_con->rollback();
+			return false;
+		}
+
+		//	插入申请方好友数据
+		std::unique_ptr<sql::PreparedStatement> pstmt2(con->_con->prepareStatement("INSERT IGNORE INTO friend(self_id, friend_id, back) VALUES(?,?,?)"));
+		pstmt2->setInt(1, to);
+		pstmt2->setInt(2, from);
+		pstmt2->setString(3, "");
+		//	执行更新
+		int rowAffected2 = pstmt2->executeUpdate();
+		if (rowAffected2 < 0) {
+			con->_con->rollback();
+			return false;
+		}
+
+		//	提交事务
+		con->_con->commit();
+		std::cout << "addfriend insert friends success " << std::endl;
+		return true;
+
 	}
 	catch (sql::SQLException& e) {
 		std::cerr << "SQLException: " << e.what();

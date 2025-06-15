@@ -155,7 +155,19 @@ void LogicSystem::LoginHandler(std::shared_ptr<CSession> session, const short& m
 		}
 	}
 	//从数据库获取好友列表
-	//todo
+	std::vector<std::shared_ptr<UserInfo>> friend_list;
+	bool b_friend_list = GetFriendList(uid, friend_list);
+	for (auto& friend_ele : friend_list) {
+		Json::Value obj;
+		obj["name"] = friend_ele->name;
+		obj["uid"] = friend_ele->uid;
+		obj["icon"] = friend_ele->icon;
+		obj["nick"] = friend_ele->nick;
+		obj["sex"] = friend_ele->sex;
+		obj["desc"] = friend_ele->desc;
+		obj["back"] = friend_ele->back;
+		rtvalue["friend_list"].append(obj);
+	}
 
 	auto server_name = ConfigMgr::Inst().GetValue("SelfServer", "Name");
 	//将登录数量增加
@@ -239,6 +251,11 @@ void LogicSystem::AddFriendApply(std::shared_ptr<CSession> session, const short&
 	auto& cfg = ConfigMgr::Inst();
 	auto self_name = cfg["SelfServer"]["Name"];
 
+	//先查询申请者的信息，后续将信息传给另一个服务器，以便对方可以显示申请者的信息
+	std::string base_key = USER_BASE_INFO + std::to_string(uid);
+	auto apply_info = std::make_shared<UserInfo>();
+	bool b_info = UserInfoMgr::GetInstance()->GetBaseInfo(base_key, uid, apply_info);
+
 	//在同一个服务器则直接通知对方有申请信息
 	if (to_ip_value == self_name) {
 		auto session = UserMgr::GetInstance()->GetSession(touid);
@@ -249,17 +266,15 @@ void LogicSystem::AddFriendApply(std::shared_ptr<CSession> session, const short&
 			notify_rtvalue["applyuid"] = uid;
 			notify_rtvalue["name"] = applyname;
 			notify_rtvalue["desc"] = "";
+			notify_rtvalue["icon"] = apply_info->icon;
+			notify_rtvalue["sex"] = apply_info->sex;
+			notify_rtvalue["nick"] = apply_info->nick;
 
 			std::string notify_str = notify_rtvalue.toStyledString();
 			session->Send(notify_str, ID_NOTIFY_ADD_FRIEND_REQ);
 		}
 		return;
 	}
-
-	//先查询申请者的信息，后续将信息传给另一个服务器，以便对方可以显示申请者的信息
-	std::string base_key = USER_BASE_INFO + std::to_string(uid);
-	auto apply_info = std::make_shared<UserInfo>();
-	bool b_info = UserInfoMgr::GetInstance()->GetBaseInfo(base_key, uid, apply_info);
 
 	AddFriendReq add_req;
 	add_req.set_applyuid(uid);
@@ -500,8 +515,12 @@ void LogicSystem::GetUserByName(const std::string& name_str, Json::Value& rtvalu
 
 bool LogicSystem::GetFriendApplyInfo(int to_uid, std::vector<std::shared_ptr<ApplyInfo>>& list)
 {
-
 	return MysqlMgr::GetInstance()->GetApplyList(to_uid, list, 0, 10);
+}
+
+bool LogicSystem::GetFriendList(int self_id, std::vector<std::shared_ptr<UserInfo>>& user_list)
+{
+	return MysqlMgr::GetInstance()->GetFriendList(self_id, user_list);
 }
 
 

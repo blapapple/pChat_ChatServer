@@ -42,4 +42,5 @@ bool UserInfoMgr::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<Use
 		redis_root["icon"] = user_info->icon;
 		RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString());
 	}
+	return true;
 }

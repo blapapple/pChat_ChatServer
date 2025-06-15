@@ -54,6 +54,7 @@ public:
 	bool GetApplyList(int touid, std::vector<std::shared_ptr<ApplyInfo>>& applyList, int begin, int limit);
 	bool AuthFriendApply(const int& from, const int& to);	//这里之后可以和AddFriend合并成一个存储过程	
 	bool AddFriend(const int& from, const int& to, std::string back_name);
+	bool GetFriendList(int self_id, std::vector<std::shared_ptr<UserInfo>>& user_list);
 	std::shared_ptr<UserInfo> GetUser(int uid);
 	std::shared_ptr<UserInfo> GetUser(std::string name);
 private:

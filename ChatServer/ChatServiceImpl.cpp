@@ -86,5 +86,33 @@ Status ChatServiceImpl::NotifyAuthFriend(ServerContext* context, const AuthFrien
 
 Status ChatServiceImpl::NotifyTextChatMsg(ServerContext* context, const TextChatMsgReq* request, TextChatMsgRsp* reply)
 {
-	return Status();
+	//查找用户是否在本服务器
+	auto touid = request->touid();
+	auto session = UserMgr::GetInstance()->GetSession(touid);
+	reply->set_error(ErrorCodes::Success);
+
+	//	用户不在内存中则直接返回
+	if (session == nullptr) {
+		return Status::OK;
+	}
+
+	Json::Value rtvalue;
+	rtvalue["error"] = ErrorCodes::Success;
+	rtvalue["fromuid"] = request->fromuid();
+	rtvalue["touid"] = request->touid();
+
+	//	将聊天数据组织为数组
+	Json::Value text_array;
+	for (auto& msg : request->textmsgs()) {
+		Json::Value element;
+		element["content"] = msg.msgcontent();
+		element["msgid"] = msg.msgid();
+		text_array.append(element);
+	}
+	rtvalue["text_array"] = text_array;
+
+	std::string return_str = rtvalue.toStyledString();
+
+	session->Send(return_str, ID_NOTIFY_TEXT_CHAT_MSG_REQ);
+	return Status::OK;
 }
